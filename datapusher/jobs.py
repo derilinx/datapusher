@@ -395,24 +395,25 @@ def push_to_datastore(task_id, input, dry_run=False):
 
     if (resource.get('hash') == file_hash
             and not data.get('ignore_hash')):
-        logger.info("The file hash hasn't changed: {hash}.".format(
-            hash=file_hash))
+        logger.info("The file hash hasn't changed: {hash} for {res_id}.".format(
+            hash=file_hash, res_id=resource_id))
         return
 
     resource['hash'] = file_hash
 
     try:
         table_set = messytables.any_tableset(tmp, mimetype=ct, extension=ct)
-    except messytables.ReadError as e:
+        row_set = table_set.tables.pop()
+    except (messytables.ReadError, IndexError) as e:
         ## try again with format
         tmp.seek(0)
         try:
             format = resource.get('format')
             table_set = messytables.any_tableset(tmp, mimetype=format, extension=format)
+            row_set = table_set.tables.pop()
         except:
-            raise util.JobError(e)
+            raise util.JobError(str(e))
 
-    row_set = table_set.tables.pop()
     offset, headers = messytables.headers_guess(row_set.sample)
 
     existing = datastore_resource_exists(resource_id, api_key, ckan_url)
