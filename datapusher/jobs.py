@@ -309,10 +309,10 @@ def push_to_datastore(task_id, input, dry_run=False):
     :type dry_run: boolean
 
     '''
-    handler = util.StoringHandler(task_id, input)
-    logger = logging.getLogger(task_id)
-    logger.addHandler(logging.handlers.SysLogHandler())
-    logger.addHandler(handler)
+    #handler = util.StoringHandler(task_id, input)
+    logger = logging.getLogger(__file__)
+    #logger.addHandler(logging.handlers.SysLogHandler())
+    #logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
 
     validate_input(input)
@@ -363,8 +363,8 @@ def push_to_datastore(task_id, input, dry_run=False):
         cl = response.headers.get('content-length')
         if cl and int(cl) > MAX_CONTENT_LENGTH:
             raise util.JobError(
-                'Resource too large to download: {cl} > max ({max_cl}).'
-                .format(cl=cl, max_cl=MAX_CONTENT_LENGTH))
+                'Resource {res_id} too large to download: {cl} > max ({max_cl}).'
+                .format(cl=cl, max_cl=MAX_CONTENT_LENGTH, res_id=resource_id))
 
         tmp = tempfile.TemporaryFile()
         length = 0
@@ -373,8 +373,8 @@ def push_to_datastore(task_id, input, dry_run=False):
             length += len(chunk)
             if length > MAX_CONTENT_LENGTH:
                 raise util.JobError(
-                    'Resource too large to process: {cl} > max ({max_cl}).'
-                    .format(cl=length, max_cl=MAX_CONTENT_LENGTH))
+                    'Resource {res_id} too large to process: {cl} > max ({max_cl}).'
+                    .format(cl=length, max_cl=MAX_CONTENT_LENGTH, res_id=resource_id))
             tmp.write(chunk)
             m.update(chunk)
 
@@ -485,7 +485,8 @@ def push_to_datastore(task_id, input, dry_run=False):
     count = 0
     for i, records in enumerate(chunky(result, 250)):
         count += len(records)
-        logger.info('Saving chunk {number}'.format(number=i))
+        logger.info('Saving chunk {number} of {res_id}'.format(number=i,
+                                                               res_id=resource_id))
         send_resource_to_datastore(resource, headers_dicts,
                                    records, api_key, ckan_url)
 
